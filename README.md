@@ -88,8 +88,8 @@ The code expects the following services to be reachable. None are bundled (model
 
 - **Multimodal LLM** — OpenAI-compatible endpoint at `llm.default.base_url` in the config. We ran Qwen3-VL-8B-Instruct via vLLM at `http://localhost:8025/v1` and Gemini-3.1-Pro via the public API.
 - **Whisper transcription** — OpenAI-compatible endpoint at `transcript.base_url`. We ran `whisper-large-v3-turbo` at `http://localhost:8038/v1`. Most evaluation videos already have cached transcripts in `data/offline_search/pool_with_hard_negatives.jsonl`, so Whisper is only required if you re-fetch new videos.
-- **BGE-M3 sentence-transformer** — local HuggingFace path, set via `memory.embedding.model_name` (default `/mnt/data/zhengyangliang/Models/BAAI/bge-m3`; reviewers should change this to their local path or `BAAI/bge-m3` to download from the Hub).
-- **Cached video files** — to actually run the Watcher / Analyst the bundle must be paired with a local cache of the 12 455 candidate `.mp4` files. Cache root is `cache.base_dir` in the config (default `/mnt/data/zhengyangliang/videobrowser/data/cache`). The bundle does **not** include the video files themselves; the Searcher operates on the offline pool's metadata + transcript, and the agent will skip videos whose mp4 is missing.
+- **BGE-M3 sentence-transformer** — local HuggingFace path, set via `memory.embedding.model_name`.
+- **Cached video files** — to actually run the Watcher / Analyst the bundle must be paired with a local cache of the 12 455 candidate `.mp4` files. Cache root is `cache.base_dir` in the config. The bundle does **not** include the video files themselves; the Searcher operates on the offline pool's metadata + transcript, and the agent will skip videos whose mp4 is missing.
 
 ## Running the main offline-track evaluation
 
