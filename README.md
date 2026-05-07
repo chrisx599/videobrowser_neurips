@@ -2,7 +2,6 @@
 
 This bundle accompanies the paper *Video-Browser / Video-BrowseComp* (NeurIPS 2026 submission). It contains the source code and data needed to inspect (and, with appropriate model endpoints, reproduce) the main offline-track method reported in the paper.
 
-The bundle is **scoped to our method only**. Baselines (ReAct, VideoAgent, VideoTree, DVD) are documented in the appendix but their code is omitted to keep the bundle small.
 
 ## Layout
 
@@ -63,38 +62,14 @@ supplementary_code/
 │   ├── build_offline_pool.py                          rebuild data/offline_search/pool*.jsonl
 │   └── build_hard_negatives.py                        rebuild data/offline_search/index_with_hard_negatives_notxt
 │
-└── data/                                              ~ 176 MB total, no video files
+└── data/                                              
     ├── benchmark/
-    │   └── videobrowsecomp/
-    │       ├── data_v4.5.jsonl                        660 evaluation questions (full benchmark)
-    │       └── train_candidates_1000.jsonl            1 000 training questions (used to distill Memory)
-    ├── offline_search/
-    │   ├── pool_with_hard_negatives.jsonl             12 455 video metadata rows (title/desc/channel/tags/transcript)
-    │   ├── pool_inventory.jsonl                       per-video provenance (seed / cache / hard-negative)
-    │   ├── pool_durations.jsonl                       ffprobe durations
-    │   └── index_with_hard_negatives_notxt/           prebuilt BM25 index over title/desc/channel/tags
-    │       ├── manifest.json
-    │       └── bm25/{bm25.pkl, doc_ids.json, meta.json}
-    └── training_runs/
-        └── memory_v2b_metadata/
-            ├── memory_bank.jsonl                      846 distilled MemoryCards (verified BM25 query + anchors)
-            └── embeddings.npz                         BGE-M3 embeddings over the bank's index_text field
+        └── videobrowsecomp/
+            ├── data_v4.5.jsonl                        660 evaluation questions (full benchmark)
+            └── train_candidates_1000.jsonl            1 000 training questions (used to distill Memory)
+    
 ```
 
-## Mapping to the paper
-
-| Paper section                                  | Code entry point                                                                                       |
-|------------------------------------------------|--------------------------------------------------------------------------------------------------------|
-| § 4 Method overview                            | `experiments/jit_paradigm/builder_visual_stage1.py` (LangGraph wiring of Planner→Searcher→Watcher→Checker→Analyst) |
-| § 4.2 Translation Memory                       | `videobrowser/memory/translation_*.py` (retrieval), `videobrowser/memory/injection.py` (planner injection) |
-| § 4.2 Memory build (Appendix B.2)              | `experiments/experience_retrieval/build_memory_v2b_metadata.py`, prompt: `videobrowser/prompts/memory_v2b_metadata_distill.j2` |
-| § 4.3 Sparse Watcher (Stage-1 visual selector) | `experiments/jit_paradigm/builder_visual_stage1.py::jit_visual_stage1_selector_node` (uses `videobrowser/tools/vision.py::extract_frames_as_grids`) |
-| § 4.3 Iterative browsing                       | `experiments/jit_paradigm/builder.py::jit_checker_node` (loop budget 𝒯_max=3)                          |
-| § 4.3 Analyst (full-context dense pass)        | `experiments/jit_paradigm/builder_ablation_full_context.py::jit_analyst_node`                          |
-| § 5 Experiments / Table 4 (Qwen / Gemini rows) | configs `experiments/jit_paradigm/configs/visual_stage1_hardneg{,_gemini}.yaml`                        |
-| § A.5 Hard-Negative Pool Construction          | `videobrowser/hard_negatives/`, `scripts/build_hard_negatives.py`                                       |
-| § B.1 Implementation details                   | YAML configs in `experiments/jit_paradigm/configs/`                                                     |
-| § B.2 Translation Memory construction          | `experiments/experience_retrieval/build_memory_v2b_metadata.py`                                        |
 
 ## Setting up
 
@@ -149,14 +124,7 @@ python -m experiments.experience_retrieval.build_memory_v2b_metadata \
 
 This will overwrite `memory_bank.jsonl` and `embeddings.npz`. The bundled bank is what the paper's reported numbers were generated against.
 
-## What is *not* in this bundle
-
-- Cached video `.mp4` files (~1–2 TB on the original machine).
-- Whisper transcripts beyond the per-video field embedded in the offline pool (audio is re-decoded if a Watcher / Analyst call needs more than the cached transcript).
-- Ablation builders other than `builder_visual_stage1.py` (no-Stage-1, no-Stage-2, no-Memory variants), training-data collection scripts, and SFT / strategy-distillation pipelines.
-- Baseline-agent code (ReAct, VideoAgent, VideoTree, DVD).
-- Eval-result JSONL files for the main paper tables — those are listed by SHA in the paper.
 
 ## Path notes
 
-YAML configs ship with absolute paths from the original training machine (`/mnt/data/zhengyangliang/...`). Reviewers running locally should edit `cache.base_dir`, `proxy.pool_path`, and `memory.embedding.model_name` to point at their own paths. Code-relative paths (`data/...`) work as-is from the bundle root.
+YAML configs ship with absolute paths from the original training machine. Reviewers running locally should edit `cache.base_dir`, `proxy.pool_path`, and `memory.embedding.model_name` to point at their own paths.
