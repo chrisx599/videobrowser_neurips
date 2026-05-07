@@ -30,8 +30,8 @@ from typing import Optional
 
 import requests
 
-ROOT = Path("/home/zhengyangliang/VideoBrowser")
-VB_DATA = Path("/mnt/data/zhengyangliang/videobrowser")
+ROOT = Path("../VideoBrowser")
+VB_DATA = Path("data/videobrowser")
 SEED_DIR = VB_DATA / "offline_set"
 CACHE_VIDEOS = VB_DATA / "data/cache/videos"
 CACHE_TS = VB_DATA / "data/cache/transcripts_with_timestamps"

@@ -84,7 +84,7 @@ class OfflineSearchBM25Config(BaseModel):
     b: float = 0.75
 
 class OfflineSearchEmbeddingConfig(BaseModel):
-    model_name: str = "/mnt/data/zhengyangliang/Models/BAAI/bge-m3"
+    model_name: str = "models/BAAI/bge-m3"
     batch_size: int = 32
 
 class OfflineSearchHybridConfig(BaseModel):
@@ -124,7 +124,7 @@ class MemoryRetrievalConfig(BaseModel):
 
 class MemoryEmbeddingConfig(BaseModel):
     provider: str = "sentence_transformers"
-    model_name: str = "/mnt/data/zhengyangliang/Models/BAAI/bge-m3"
+    model_name: str = "models/BAAI/bge-m3"
 
 class MemoryBanditConfig(BaseModel):
     algorithm: str = "linucb"

@@ -665,7 +665,7 @@ def main() -> None:
                    help="Env var name for API key (e.g. GEMINI_API_KEY). "
                         "Leave unset for local vLLM servers.")
     p.add_argument("--embedding-model",
-                   default="/mnt/data/zhengyangliang/Models/BAAI/bge-m3")
+                   default="models/BAAI/bge-m3")
     p.add_argument("--embedding-url", default=None,
                    help="If set, embed via the BGE-M3 vLLM HTTP server "
                         "(e.g. http://localhost:8030/v1/embeddings) instead of "

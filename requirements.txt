@@ -76,7 +76,7 @@ typing-inspect==0.9.0
 typing-inspection==0.4.2
 urllib3==2.5.0
 uuid-utils==0.12.0
--e file:///home/zhengyangliang/VideoBrowser
+-e ../VideoBrowser
 wheel==0.45.1
 xxhash==3.6.0
 yarl==1.22.0

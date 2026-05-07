@@ -61,8 +61,8 @@ DEFAULT_S1_GRIDS = 2
 DEFAULT_S1_FRAMES_PER_GRID = 9
 DEFAULT_S1_CELL_SIZE = 256
 
-VIDEO_CACHE_DIR = Path("/mnt/data/zhengyangliang/videobrowser/data/cache/videos")
-GRID_CACHE_DIR = Path("/mnt/data/zhengyangliang/videobrowser/data/cache/grids")
+VIDEO_CACHE_DIR = Path("data/cache/videos")
+GRID_CACHE_DIR = Path("data/cache/grids")
 GRID_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 
