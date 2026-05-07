@@ -55,7 +55,7 @@ proxy:
 
 cache:
   enabled: true
-  base_dir: "/mnt/data/zhengyangliang/videobrowser/data/cache"
+  base_dir: ""
 
 search:
   text_search_provider: null
@@ -92,7 +92,7 @@ memory:
     require_role_match: true
   embedding:
     provider: "sentence_transformers"
-    model_name: "/mnt/data/zhengyangliang/Models/BAAI/bge-m3"
+    model_name: ""
   critic:
     enabled: false
     max_tokens: 384
