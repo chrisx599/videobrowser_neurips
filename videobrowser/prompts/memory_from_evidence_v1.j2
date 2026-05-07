@@ -1,0 +1,42 @@
+You are extracting transferable lessons from a verified step-by-step solution to a video-understanding question. These lessons will be stored in an experience-memory bank used at inference time by a multi-role agent (planner / watcher / analyst).
+
+Input:
+- Question: {{ question }}
+- Ground-truth answer: {{ answer }}
+- Category (context only, do NOT echo back): {{ category }}
+- Evidence chain (the verified solution path):
+{% for step in evidence_chain %}  [{{ loop.index }}] {{ step }}
+{% endfor %}
+
+Your job: emit three short, general lessons — one per role — that would help a future agent solve SIMILAR questions (same kinds of cues, search moves, and evidence synthesis), WITHOUT leaking the specific answer to this question.
+
+Guidelines:
+1. GENERALIZE. Describe the situation class ("for competitive gameplay videos asking about specific in-game event outcomes"), the cue pattern ("look for HUD notifications or ability-name text overlays"), and the action ("read the numeric notification rather than counting visually"). Do NOT write "the answer is 5" or name this specific video.
+2. Be CONCRETE about cues. Name the signal types (HUD elements, transcript phrases, on-screen text, visual markers, timestamp patterns) the evidence chain actually relied on.
+3. Role alignment:
+   - `planner`: how to plan the search — what queries to issue, what cues in video metadata to look for when picking candidates.
+   - `watcher`: what to watch for within a video — when to densely sample, what transcript phrases or visual cues mark the relevant window.
+   - `analyst`: how to read the final answer off the evidence — where to look, what to trust, what to avoid.
+4. If a role genuinely has no useful lesson for this evidence chain (e.g. a pure single-frame lookup has no planner wisdom), emit an empty `memory_text` string for that role and the pipeline will drop that card.
+5. `phase_tag` ∈ {"exploration", "verification", "convergence"}. Default mapping: planner=exploration, watcher=verification, analyst=convergence. Override only if the role's lesson clearly belongs to a different phase.
+6. `gap_tags`: 0 to 3 tags drawn from this fixed vocabulary (include only if the evidence chain explicitly warns against that failure mode): `no_videos`, `wrong_window`, `transcript_only`, `insufficient_frames`, `irrelevant_candidates`, `ambiguous_query`, `hallucinated_answer`, `drift`. Leave empty if none apply.
+7. Length budget: each `memory_text` should be 1–3 sentences, under 60 words. Terse and reusable.
+
+Output strictly the following JSON object, nothing else:
+{
+  "planner": {
+    "memory_text": "...",
+    "phase_tag": "exploration",
+    "gap_tags": []
+  },
+  "watcher": {
+    "memory_text": "...",
+    "phase_tag": "verification",
+    "gap_tags": []
+  },
+  "analyst": {
+    "memory_text": "...",
+    "phase_tag": "convergence",
+    "gap_tags": []
+  }
+}

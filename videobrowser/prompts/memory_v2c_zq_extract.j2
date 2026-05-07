@@ -1,0 +1,29 @@
+{# videobrowser/prompts/memory_v2c_zq_extract.j2 #}
+You are extracting a visual-evidence signature from a user question. The signature describes WHAT visual evidence is needed in a video to answer this question; it is used to find similar past questions in a translation memory.
+
+# Question
+
+{{ question }}
+
+# Hard constraints
+
+1. Pick exactly one `evidence_type` from this closed set (do NOT paraphrase):
+   `object_property`, `action`, `scene_setting`, `entity_identification`, `on_screen_text`, `spoken_content`, `temporal_relation`, `cross_source_fact`.
+2. Pick exactly one `answer_type` from this closed set:
+   `COLOR`, `COUNT`, `PERSON`, `OBJECT`, `LOCATION`, `DATE_TIME`, `TEXT`, `ENTITY_NAME`, `OTHER`.
+3. `visual_target` ≤ 30 words: WHAT must be observed in the video to find the evidence.
+4. `search_warning` ≤ 30 words: which information should NOT be searched (typically the unknown answer value, fine-grained visual properties unlikely to appear in metadata).
+
+NOTE: Do NOT include `searchable_context` — that field exists only in offline-built memory cards (where evidence-video metadata is available). At planner time we do not yet know which video to search.
+
+# Output
+
+Emit ONLY this JSON object, no commentary, no code fences:
+
+{
+  "evidence_type": "...",
+  "answer_type": "...",
+  "visual_target": "...",
+  "searchable_context": "",
+  "search_warning": "..."
+}

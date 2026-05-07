@@ -1,0 +1,48 @@
+You are designing BM25 search queries that will surface a specific YouTube video against a large offline pool. The pool is indexed over title, description, channel, tags, and transcript fields. We will score your queries by whether the target video appears in the top results — so concrete entity names and salient on-screen / spoken terms matter more than generic phrases.
+
+# Target
+
+User question (the kind of question we want to answer using this video):
+{{ question }}
+
+Seed video metadata (this is the video that contains the answer):
+- Title: {{ title }}
+- Channel: {{ channel }}
+- Tags: {{ tags | join(', ') if tags else '(none)' }}
+- Description (truncated):
+{{ description }}
+- Transcript snippet:
+{{ transcript_snippet }}
+
+{% if feedback %}# Feedback from previous attempt
+{{ feedback }}
+
+{% endif %}# Hard constraints
+
+1. Produce exactly 5 candidate BM25 queries. Each query is a short string (≤ 12 words), lowercase preferred, no quoting, no operators (no AND/OR/quotes).
+2. Diversity: at least two queries should anchor on proper-noun entities from title/description; at least one should use salient on-screen / spoken terms from the transcript or description; the remaining can mix.
+3. Do NOT echo any answer-like phrase you can infer from the question (e.g., a number, name, or specific event the question is asking for), do NOT include numeric timestamps, and do NOT include verbatim transcript phrases that obviously give away the answer.
+4. Anchors block: list 2–4 proper-noun entities, 1–4 salient terms (on-screen text, named mechanics, distinctive props), and at most one short channel/source signal (or empty string if none is distinctive).
+
+# Output
+
+Emit ONLY the following JSON object, no commentary, no code fences:
+
+{
+  "queries": ["q1", "q2", "q3", "q4", "q5"],
+  "anchors": {
+    "entities": ["E1", "E2"],
+    "channel_signal": "short hint or empty string",
+    "salient_terms": ["t1", "t2"]
+  }
+}
+
+
+## Self-check (perform silently before emitting)
+Before writing the JSON, verify each item:
+- [ ] No query contains a numeric timestamp (e.g., "0:24", "161s").
+- [ ] No query echoes the answer the user is looking for.
+- [ ] No query contains a verbatim quoted phrase from the transcript.
+- [ ] The JSON has exactly 5 entries in "queries".
+- [ ] Each query is ≤ 12 words.
+If any check fails, rewrite the affected queries before emitting.

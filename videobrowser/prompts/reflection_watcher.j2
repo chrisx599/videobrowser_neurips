@@ -1,0 +1,34 @@
+You are an experience extraction expert analyzing a video-based QA episode.
+
+## Episode Context
+Category: {{ category }}
+User query: {{ user_query }}
+Search queries used: {{ search_queries }}
+Videos processed: {{ processed_count }} (titles: {{ video_titles }})
+Videos marked relevant: {{ relevant_count }}
+{% if relevant_titles %}Relevant videos: {{ relevant_titles }}{% endif %}
+Result: {{ "CORRECT" if is_correct else "INCORRECT" }}
+{% if not is_correct %}
+Agent predicted: {{ prediction }}
+Ground truth: {{ ground_truth }}
+{% endif %}
+
+## Task
+Extract 1-2 specific, actionable strategy lessons for future video selection and relevance judgment.
+
+## Rules
+- Each lesson MUST start with a situation condition (e.g., "When searching for...", "For queries requiring...", "If candidate videos...")
+- Include WHAT to do differently and WHY
+- You may reference the query category or type but NOT the specific answer
+- If INCORRECT: what video selection criteria would have helped find the right content?
+- If CORRECT: what made the video selection effective?
+
+## Examples of GOOD lessons
+- "When the query requires verifying a specific numerical claim (e.g., a score or date), prioritize videos with on-screen graphics or scoreboards over commentary-only clips."
+- "For cultural/historical food questions, videos from educational channels with explicit scientific explanations are more reliable than cooking or entertainment videos."
+
+## Examples of BAD lessons (too generic)
+- "Prioritize videos that explicitly mention key terms."
+- "Use sparse sampling to validate claims."
+
+Output only the lessons, one per line.

@@ -1,0 +1,58 @@
+You are extracting a transferable search-strategy lesson from a verified step-by-step solution to a video-understanding question. The lesson will be stored in an experience-memory bank and retrieved by a planner agent solving DIFFERENT future queries. A lesson is only useful if it applies across many source videos — not just this one.
+
+Input:
+- Question: {{ question }}
+- Ground-truth answer: {{ answer }}
+- Category (context only, do NOT echo back): {{ category }}
+- Evidence chain (the verified solution path):
+{% for step in evidence_chain %}  [{{ loop.index }}] {{ step }}
+{% endfor %}
+
+## Hard constraints — DO NOT VIOLATE
+
+1. **No specific timestamps**. Never write `"0:24"`, `"0:05–0:10"`, `"161.6s"`, or any numeric time. Use relative descriptors only: `"early in the video"`, `"late in the video"`, `"around the segment where X happens"`.
+2. **No proper nouns from the source**. Never mention specific character names (Venom, Kurt Muse), brand/product names (Marvel Rivals, Coca-Cola), show/film names (AFV, Keanu Reeves), place names (Glastonbury), organization names, or the answer string itself.
+3. **No specific quoted phrases** from the source video or transcript. Replace a specific phrase like `"'far right'"` with the *type* of phrase: `"positional callouts"`, `"self-identification phrases"`, `"on-screen score notifications"`.
+4. **No specific numeric values** from the answer or evidence chain. If the answer is `"5"`, never say "the kill count is 5"; instead, "read the numeric notification after the impact frame."
+5. The lesson must be REUSABLE: it should apply to future queries from *different source videos* in the same broad category. If a reader would need to know which specific video you were thinking of to use the lesson, it is too specific — rewrite it.
+
+## Role — planner only
+The lesson guides a planner agent responsible for search strategy: what kinds of queries to issue, what kinds of metadata cues to look for when picking candidates, what sequencing of queries narrows the candidate pool efficiently.
+
+## phase_tag and gap_tags
+- `phase_tag` ∈ {"exploration", "verification", "convergence"}. Default for planner: `exploration`.
+- `gap_tags`: 0–3 from {`no_videos`, `wrong_window`, `transcript_only`, `insufficient_frames`, `irrelevant_candidates`, `ambiguous_query`, `hallucinated_answer`, `drift`} — include only if the evidence chain explicitly warns against that failure mode.
+
+## Length
+`memory_text`: 1–2 sentences, ≤40 words. Shorter almost always means more abstract.
+
+## Examples — what to do and NOT do
+
+### Example A (interview clip, career history)
+BAD (too specific — names a venue and year): `"Search 'Glastonbury 2024' + interview to narrow to performer candidates."`
+GOOD: `"For questions about a performer's recent career event, combine event-type + year-range queries with interview-format keywords to surface post-event Q&A segments."`
+
+### Example B (gameplay video, event outcome)
+BAD (too specific — names a game and ability): `"Search 'Venom ultimate KO highlight' on YouTube to find the moment."`
+GOOD: `"For competitive gameplay outcome questions, combine game-title + ability/mechanic + 'highlight' or 'clutch' keywords; prefer tournament-recap channels over streamer VODs."`
+
+### Example C (platitude — avoid this too)
+BAD (too generic, no actionable signal): `"Search carefully for relevant videos."`
+GOOD: (same form as A/B — concrete query shape + candidate-selection cue)
+
+## Output format
+
+Emit ONLY the following JSON object, no commentary.
+
+{
+  "planner": {"memory_text": "...", "phase_tag": "exploration", "gap_tags": []}
+}
+
+## Self-check (do this silently before emitting)
+Verify the `memory_text` you wrote:
+- [ ] Contains no numeric timestamp or time range.
+- [ ] Contains no proper noun that would identify this specific video.
+- [ ] Contains no quoted phrase that appears in the evidence chain.
+- [ ] A reader unaware of this source video could apply the lesson to a different video.
+
+If any check fails, rewrite the `memory_text` before emitting. The output must be valid JSON with the single key `planner`.

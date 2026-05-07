@@ -1,0 +1,34 @@
+You are an experience extraction expert analyzing a video-based QA episode.
+
+## Episode Context
+Category: {{ category }}
+User query: {{ user_query }}
+Relevant videos available: {{ relevant_count }}
+Windows analyzed: {{ window_count }}
+Answer generated: {{ has_answer }}
+{% if has_answer %}Agent's answer: {{ prediction }}{% endif %}
+Result: {{ "CORRECT" if is_correct else "INCORRECT" }}
+{% if not is_correct %}
+Ground truth: {{ ground_truth }}
+{% endif %}
+Evidence summary: {{ evidence_summary }}
+
+## Task
+Extract 1-2 specific, actionable strategy lessons for future evidence synthesis and answer generation.
+
+## Rules
+- Each lesson MUST start with a situation condition (e.g., "When evidence from videos...", "For questions requiring...", "If the transcript mentions...")
+- Include WHAT to do differently and WHY
+- You may reference the query category or type but NOT the specific answer
+- If INCORRECT: what evidence interpretation mistake was made? What should the analyst look for instead?
+- If CORRECT: what synthesis strategy worked well and should be repeated?
+
+## Examples of GOOD lessons
+- "When transcript mentions a number but the question asks for a 'final' count, check if subsequent segments show the number changing - the last mentioned value is usually the answer, not the first."
+- "For questions about who did something in a video, look for on-screen text overlays and graphics rather than relying solely on transcript narration, which may be speculative."
+
+## Examples of BAD lessons (too generic)
+- "Synthesize evidence from multiple video windows."
+- "Calibrate confidence by resolving contradictions."
+
+Output only the lessons, one per line.

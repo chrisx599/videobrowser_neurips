@@ -1,0 +1,118 @@
+# Visual Stage 1 selector on hardneg pool, with v2b memory — GEMINI variant.
+#
+# Mirrors visual_stage1_hardneg.yaml but:
+#   - LLM swapped to gemini-3.1-pro-preview (Google OpenAI-compat endpoint)
+#   - v2b memory bank swapped to Gemini-built bank
+#     (data/training_runs/memory_v2b_metadata_gemini/)
+#   - ranker = cosine (matches our earlier Gemini v2b text-Stage1 runs;
+#     Gemini bank has no bandit_state.json)
+# Index uses the no-transcript hardneg index for apples-to-apples retrieval
+# vs. the v2bmem text-Stage1 numbers we collected with Gemini.
+# Cost estimate per 450-row dev split: ~$60-150 USD (rate-limited; 2-4h wall).
+
+llm:
+  default:
+    provider: "openai"
+    model: "gemini-3.1-pro-preview"
+    base_url: "https://generativelanguage.googleapis.com/v1beta/openai/"
+    api_key_env: "GEMINI_API_KEY"
+    max_tokens: 4096
+
+transcript:
+  provider: "whisper"
+  model: "openai/whisper-large-v3-turbo"
+  base_url: "http://localhost:8038/v1"
+  api_key: "EMPTY"
+  language: "en"
+
+watcher:
+  num_frames: 64                 # unused by this watcher (no Stage 2)
+  video_downloader: "ytdlp"
+  max_duration_seconds: 3600
+  num_grids: 2                   # Stage 1 visual: 2 grids per candidate
+  frames_per_grid: 9             # 3x3 mosaic
+  grid_cell_size: 256
+
+analyst:
+  num_frames: 128                # uniform frames over full duration
+
+selector:
+  top_k: 1                       # visual selector picks 1 best candidate
+
+planner:
+  max_queries: 1
+
+checker:
+  max_loop_steps: 3
+
+proxy:
+  enabled: false
+  protocol: "socks5"
+  ssh_tunnel: true
+  use_cookies: false
+  pool_path: "data/Proxylists.json"
+  validated_pool_path: "data/ip_pools_alive.txt"
+
+cache:
+  enabled: true
+  base_dir: "/mnt/data/zhengyangliang/videobrowser/data/cache"
+
+search:
+  text_search_provider: null
+  video_search_provider: "offline"
+  offline:
+    enabled: true
+    pool_path: "data/offline_search/pool_with_hard_negatives.jsonl"
+    index_dir: "data/offline_search/index_with_hard_negatives_notxt"
+    fields: ["title", "description", "channel", "tags"]
+    default:
+      method: "bm25"
+      top_k: 10
+    bm25:
+      k1: 1.5
+      b: 0.75
+
+logger:
+  enabled: true
+  log_dir: "data/logs"
+
+memory:
+  enabled: true
+  # Pure BGE-M3 cosine retrieval against Gemini-built v2b bank, NO bandit,
+  # NO LLM critic — matches memory_v2b_metadata_gemini.yaml so Gemini text-S1
+  # vs visual-S1 numbers are apples-to-apples on the memory side.
+  ranker: "cosine"
+  store_path: "data/training_runs/memory_v2b_metadata_gemini/memory_bank.jsonl"
+  embedding_path: "data/training_runs/memory_v2b_metadata_gemini/embeddings.npz"
+  events_path: "data/benchmark/results/eval_events_v2b_metadata_gemini.jsonl"
+  retrieval:
+    proposal_top_n: 20
+    selection_top_k: 3
+    include_failure_memories: true   # anchors-only cards are still informative
+    require_role_match: true
+  embedding:
+    provider: "sentence_transformers"
+    model_name: "/mnt/data/zhengyangliang/Models/BAAI/bge-m3"
+  critic:
+    enabled: false
+    max_tokens: 384
+    low_threshold: 0.30
+    high_threshold: 0.70
+    fallback_confidence: 0.5
+    per_card_drop_threshold: 0.25
+  uncertainty:
+    enabled: true
+    score_var_weight: 0.4
+    outcome_entropy_weight: 0.3
+    embedding_spread_weight: 0.3
+  scorer:
+    enabled: false
+
+prompts:
+  analyst_format_instructions: |
+    Your response should be in the following JSON format:
+    {
+        "Explanation": "your explanation for your final answer",
+        "Answer": "your succinct, final answer",
+        "Confidence": "your confidence score between 0% and 100% for your answer"
+    }

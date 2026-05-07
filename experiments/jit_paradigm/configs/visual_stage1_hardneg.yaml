@@ -1,0 +1,117 @@
+# Visual Stage 1 selector on hardneg pool, with v2b memory.
+#
+# Mirrors hardneg_jit_no_stage2_f64.yaml but routes through
+# experiments/jit_paradigm/builder_visual_stage1.py. Differences vs that
+# config:
+#   - selector.top_k: 1 (visual selector picks single best candidate)
+#   - watcher.{num_grids, frames_per_grid, grid_cell_size} added (Stage 1
+#     visual sampling config, cache-keyed on these)
+#   - memory enabled with v2b bank so the planner gets the same query
+#     rewrites we used for the standalone selector_top1 evals
+# Index uses the no-transcript hardneg index for apples-to-apples retrieval
+# vs. the v2bmem text-Stage1 numbers we already collected.
+
+llm:
+  default:
+    provider: "openai"
+    model: "Qwen3-VL-8B-Instruct"
+    base_url: "http://localhost:8025/v1"
+    max_tokens: 2048
+
+transcript:
+  provider: "whisper"
+  model: "openai/whisper-large-v3-turbo"
+  base_url: "http://localhost:8038/v1"
+  api_key: "EMPTY"
+  language: "en"
+
+watcher:
+  num_frames: 64                 # unused by this watcher (no Stage 2)
+  video_downloader: "ytdlp"
+  max_duration_seconds: 3600
+  num_grids: 2                   # Stage 1 visual: 2 grids per candidate
+  frames_per_grid: 9             # 3x3 mosaic
+  grid_cell_size: 256
+
+analyst:
+  num_frames: 128                # uniform frames over full duration
+
+selector:
+  top_k: 1                       # visual selector picks 1 best candidate
+
+planner:
+  max_queries: 1
+
+checker:
+  max_loop_steps: 3
+
+proxy:
+  enabled: false
+  protocol: "socks5"
+  ssh_tunnel: true
+  use_cookies: false
+  pool_path: "data/Proxylists.json"
+  validated_pool_path: "data/ip_pools_alive.txt"
+
+cache:
+  enabled: true
+  base_dir: "/mnt/data/zhengyangliang/videobrowser/data/cache"
+
+search:
+  text_search_provider: null
+  video_search_provider: "offline"
+  offline:
+    enabled: true
+    pool_path: "data/offline_search/pool_with_hard_negatives.jsonl"
+    index_dir: "data/offline_search/index_with_hard_negatives_notxt"
+    fields: ["title", "description", "channel", "tags"]
+    default:
+      method: "bm25"
+      top_k: 10
+    bm25:
+      k1: 1.5
+      b: 0.75
+
+logger:
+  enabled: true
+  log_dir: "data/logs"
+
+memory:
+  enabled: true
+  # Pure BGE-M3 cosine retrieval, NO bandit, NO LLM critic — matches the
+  # Gemini visual_stage1_hardneg_gemini config so model is the only variable.
+  ranker: "cosine"
+  store_path: "data/training_runs/memory_v2b_metadata/memory_bank.jsonl"
+  embedding_path: "data/training_runs/memory_v2b_metadata/embeddings.npz"
+  events_path: "data/benchmark/results/eval_events.jsonl"
+  retrieval:
+    proposal_top_n: 20
+    selection_top_k: 3
+    include_failure_memories: true   # anchors-only cards are still informative
+    require_role_match: true
+  embedding:
+    provider: "sentence_transformers"
+    model_name: "/mnt/data/zhengyangliang/Models/BAAI/bge-m3"
+  critic:
+    enabled: false
+    max_tokens: 384
+    low_threshold: 0.30
+    high_threshold: 0.70
+    fallback_confidence: 0.5
+    per_card_drop_threshold: 0.25
+  uncertainty:
+    enabled: true
+    score_var_weight: 0.4
+    outcome_entropy_weight: 0.3
+    embedding_spread_weight: 0.3
+  scorer:
+    enabled: false
+
+prompts:
+  analyst_format_instructions: |
+    Your response should be in the following JSON format:
+    {
+        "Explanation": "your explanation for your final answer",
+        "Answer": "your succinct, final answer",
+        "Confidence": "your confidence score between 0% and 100% for your answer"
+    }

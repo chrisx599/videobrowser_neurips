@@ -1,0 +1,121 @@
+You are an experienced video-search strategist analyzing agent trajectories
+across diverse question types. Your goal is to identify GENERALIZABLE search
+and reasoning strategies that transfer across topics, not category-specific
+heuristics.
+
+Below are {{ n_correct }} CORRECT episodes and {{ n_failed }} FAILED episodes
+sampled from a broad open-ended video QA distribution. The episodes span
+arbitrary topics (sports, film, games, TV, music, everyday life, etc.).
+
+For each episode you are given:
+  - The question and ground truth answer
+  - The final answer and correctness flag
+  - Per-loop trajectory: planner thought + queries, searcher candidate/select counts,
+    watcher per-video actions (stage1 selection, frame picks, relevance verdict, status),
+    checker verdict (answerable, signal, missing slots, reason)
+  - The analyst's final evidence summary
+  - A post-hoc reflection memory_text (supplementary; prioritize the trajectory)
+  - flip_label: memory-related diagnostic
+
+Identify 0-3 reusable search strategies that DISTINGUISH correct trajectories
+from failed ones REGARDLESS of topic. A good strategy is:
+  - topic-agnostic (applies across at least 2 distinct topics seen above),
+  - actionable (a concrete next step the planner should take),
+  - grounded (supported by ≥2 correct episodes from the sample).
+
+REJECTION CRITERIA: A single-word procedure like "search" or "watch" is
+automatically rejected. A procedure that merely says "be careful" or
+"pay attention" is rejected. Procedures that only restate the trigger
+are rejected. Aim for the kind of specificity a new planner could
+execute as a next action without re-reading the trigger.
+
+Output a JSON array (possibly empty). Each element MUST have exactly these fields:
+  name              : ≤4-word human-readable label (string)
+  trigger_condition : when to apply; reference observable planner-time state only
+                      (loop index, tried queries, relevant-window count, prior-
+                      search outcome, etc.). DO NOT reference ground-truth or a
+                      specific topic name.
+  procedure         : a CONCRETE action description, 15-50 words.
+                      MUST contain a verb from {search, rerank, zoom,
+                      broaden, narrow, switch, re-query, abstain, watch,
+                      skip, replace}.
+                      MUST also say WHAT to search/watch/zoom (the object)
+                      and HOW (a phrasing pattern or frame range).
+                      BAD examples: "search", "watch carefully",
+                                    "be more specific".
+                      GOOD examples:
+                        "search again with the query rewritten to include
+                         the specific visual attribute named in the question
+                         (e.g., 'person wearing red jacket' instead of just
+                         the event name)"
+                        "zoom to 1 FPS on frames where the relevant
+                         watermark or caption is visible and re-read the
+                         text"
+                        "switch from video title search to post-match
+                         interview keyword search when first 3 queries
+                         returned zero relevant windows"
+  applicable_categories  : list of topic labels where this applies;
+                           use ["any"] if domain-agnostic.
+  supporting_episode_ids : list of ≥2 row_ids drawn from the CORRECT episodes
+  negative_episode_ids   : (optional) list of row_ids from FAILED episodes where
+                           absence of this strategy plausibly caused failure
+
+{# NOTE for operators: rich-mode traces are ~400-800 tokens each (vs ~150 in
+   old format). Recommended batch sizes for Qwen3-VL-8B (32k context):
+   --n-correct-per-batch 15 --n-failed-per-batch 15 (instead of 30+30). #}
+
+CORRECT episodes:
+{% for ep in correct_episodes %}
+  ═════ row_id={{ ep.row_id }}  flip={{ ep.flip_label }} ═════
+  Question:     {{ ep.question }}
+  Ground truth: {{ ep.ground_truth }}
+  Final answer (correct={{ ep.on_correct }}): {{ ep.on_final_answer }}
+
+  Trajectory ({{ ep.on_loop_count }} loops, {{ ep.on_total_tokens }} tokens):
+  {% for loop_rec in (ep.loops or []) %}
+    ── Loop {{ loop_rec.loop_index }} ──
+    {% if loop_rec.planner %}planner.thought: {{ loop_rec.planner.thought }}
+    planner.queries: {{ loop_rec.planner.search_queries | join(' | ') }}
+    {% endif %}
+    {% if loop_rec.searcher %}searcher: executed {{ loop_rec.searcher.queries_executed | length }} queries, got {{ loop_rec.searcher.raw_candidate_count }} raw candidates, selected {{ loop_rec.searcher.selected_video_ids | length }} videos
+    {% endif %}
+    {% if loop_rec.watcher %}watcher: processed {{ loop_rec.watcher.videos_processed | length }} videos
+    {% for v in loop_rec.watcher.videos_processed %}      - "{{ v.title }}" stage1={{ v.stage1_selected }} stage2_frames={{ v.stage2_frames_picked | length }} relevant={{ v.relevant }} n_windows={{ v.n_windows }} status={{ v.final_status }}
+    {% endfor %}{% endif %}
+    {% if loop_rec.checker %}checker: answerable={{ loop_rec.checker.answerable }} signal={{ loop_rec.checker.signal }} missing={{ loop_rec.checker.missing_slots }} reason="{{ loop_rec.checker.reason }}"
+    {% endif %}
+  {% endfor %}
+  {% if ep.analyst %}analyst (final): has_evidence={{ ep.analyst.has_evidence }} | evidence: {{ ep.analyst.evidence_summary }}
+  {% endif %}
+  Reflection memory_text: {{ ep.on_memory_text }}
+
+{% endfor %}
+
+FAILED episodes:
+{% for ep in failed_episodes %}
+  ═════ row_id={{ ep.row_id }}  flip={{ ep.flip_label }} ═════
+  Question:     {{ ep.question }}
+  Ground truth: {{ ep.ground_truth }}
+  Final answer (correct={{ ep.on_correct }}): {{ ep.on_final_answer }}
+
+  Trajectory ({{ ep.on_loop_count }} loops, {{ ep.on_total_tokens }} tokens):
+  {% for loop_rec in (ep.loops or []) %}
+    ── Loop {{ loop_rec.loop_index }} ──
+    {% if loop_rec.planner %}planner.thought: {{ loop_rec.planner.thought }}
+    planner.queries: {{ loop_rec.planner.search_queries | join(' | ') }}
+    {% endif %}
+    {% if loop_rec.searcher %}searcher: executed {{ loop_rec.searcher.queries_executed | length }} queries, got {{ loop_rec.searcher.raw_candidate_count }} raw candidates, selected {{ loop_rec.searcher.selected_video_ids | length }} videos
+    {% endif %}
+    {% if loop_rec.watcher %}watcher: processed {{ loop_rec.watcher.videos_processed | length }} videos
+    {% for v in loop_rec.watcher.videos_processed %}      - "{{ v.title }}" stage1={{ v.stage1_selected }} stage2_frames={{ v.stage2_frames_picked | length }} relevant={{ v.relevant }} n_windows={{ v.n_windows }} status={{ v.final_status }}
+    {% endfor %}{% endif %}
+    {% if loop_rec.checker %}checker: answerable={{ loop_rec.checker.answerable }} signal={{ loop_rec.checker.signal }} missing={{ loop_rec.checker.missing_slots }} reason="{{ loop_rec.checker.reason }}"
+    {% endif %}
+  {% endfor %}
+  {% if ep.analyst %}analyst (final): has_evidence={{ ep.analyst.has_evidence }} | evidence: {{ ep.analyst.evidence_summary }}
+  {% endif %}
+  Reflection memory_text: {{ ep.on_memory_text }}
+
+{% endfor %}
+
+Respond with ONLY the JSON array. No prose.

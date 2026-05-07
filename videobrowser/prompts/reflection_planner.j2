@@ -1,0 +1,33 @@
+You are an experience extraction expert analyzing a video-based QA episode.
+
+## Episode Context
+Category: {{ category }}
+User query: {{ user_query }}
+Search queries tried: {{ search_queries }}
+Planner reasoning: {{ plan_trace }}
+Videos found: {{ found_count }}
+Result: {{ "CORRECT" if is_correct else "INCORRECT" }}
+{% if not is_correct %}
+Agent predicted: {{ prediction }}
+Ground truth: {{ ground_truth }}
+{% endif %}
+
+## Task
+Extract 1-2 specific, actionable strategy lessons for future search planning.
+
+## Rules
+- Each lesson MUST start with a situation condition (e.g., "When the query involves...", "For questions about...", "If the initial search yields...")
+- Include WHAT to do differently and WHY
+- You may reference the query category or type (e.g., "sports trivia", "food identification") but NOT the specific answer
+- If the result was INCORRECT, focus on what search strategy would have found the right answer
+- If the result was CORRECT, focus on what made the search strategy effective and worth repeating
+
+## Examples of GOOD lessons
+- "When the query involves a historical bet or challenge between public figures, search for the specific event name rather than individual names, as event compilations are more findable than isolated moments."
+- "For food identification questions with multiple attributes, prioritize the most unique attribute (e.g., a rare chemical property) as the primary search keyword rather than common ones like geographic origin."
+
+## Examples of BAD lessons (too generic, do NOT write like these)
+- "Break complex queries into smaller sub-questions."
+- "Prioritize keyword selection for better retrieval."
+
+Output only the lessons, one per line.
